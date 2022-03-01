@@ -1,0 +1,6 @@
+[submodule "game"]
+	path = game
+	url = https://github.com/erurami/minigames.git
+[submodule "engine"]
+	path = engine
+	url = https://github.com/erurami/connect4-bot.git
