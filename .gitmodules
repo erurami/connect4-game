@@ -4,3 +4,6 @@
 [submodule "engine"]
 	path = engine
 	url = https://github.com/erurami/connect4-bot.git
+[submodule "WinColor"]
+	path = WinColor
+	url = https://github.com/erurami/win32-theme-color.git
