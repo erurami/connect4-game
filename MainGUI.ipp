@@ -137,7 +137,7 @@ LRESULT CALLBACK _Connect4GuiGuiWndProc(
             {
 
                 case _BUTTON_ID_NEWGAME:
-                    SendMessage(hWnd_parent, _C4CM_INITIALIZE, 7, 6);
+                    SendMessage(hWnd_parent, _C4CM_INITIALIZEWITHWZD, 7, 6);
                     break;
 
                 case _BUTTON_ID_UNDO:
