@@ -203,6 +203,9 @@ LRESULT CALLBACK _Connect4GuiMainWndProc(
                     case MENUID_UNDO:
                         PostMessage(hWnd, _C4CM_UNDO, 0, 0);
                         break;
+                    case MENUID_NEWGAME:
+                        PostMessage(hWnd, _C4CM_INITIALIZEWITHWZD, 0, 0);
+                        break;
                 }
             }
             return 0;
@@ -231,6 +234,12 @@ LRESULT CALLBACK _Connect4GuiMainWndProc(
             p_game = new FourInARow::Game((int)wp, (int)lp);
             game_state = 1;
             InvalidateRect(hWnd_main_gui, NULL, FALSE);
+            return 0;
+
+
+        case _C4CM_INITIALIZEWITHWZD:
+            // TODO:
+            SendMessage(hWnd, _C4CM_INITIALIZE, 6, 7);
             return 0;
 
 
