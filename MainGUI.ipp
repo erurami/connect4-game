@@ -8,8 +8,6 @@
 
 #include <windows.h>
 
-#include <stdio.h>
-
 
 
 LRESULT CALLBACK _Connect4GuiGuiWndProc(
