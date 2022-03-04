@@ -112,6 +112,7 @@ HWND _Connect4GuiSetupMainWindow(void)
 }
 
 
+#define _TIMER_ID_CHECKTHINKRESULT 1
 
 LRESULT CALLBACK _Connect4GuiMainWndProc(
         HWND hWnd,
@@ -216,10 +217,20 @@ LRESULT CALLBACK _Connect4GuiMainWndProc(
 
 
         case _C4CM_PUTCOIN:
-            p_game->PutCoin((int)wp, 1);
-            PostMessage(hWnd, _C4CM_STARTTHINKING, 0, 0);
+            {
+            int result = p_game->PutCoin((int)wp);
+            game_state = p_game->GetWhichTurn();
             InvalidateRect(hWnd_main_gui, NULL, FALSE);
-            return 0;
+            if (result == 0)
+            {
+                SendMessage(hWnd, _C4CM_STARTTHINKING, 0, 0);
+            }
+            else
+            {
+                MessageBox(hWnd, TEXT("failed to put that column"), TEXT("error"), MB_ICONERROR);
+            }
+            return result;
+            }
 
 
         case _C4CM_UNDO:
@@ -235,17 +246,14 @@ LRESULT CALLBACK _Connect4GuiMainWndProc(
         case _C4CM_STARTTHINKING:
             p_engine = new Connect4Ai(p_game);
             p_engine->StartThinkingNextMove();
-            p_engine->WaitForFinish();
-            p_game->PutCoin(p_engine->GetResult());
-            delete p_engine;
-            p_engine = NULL;
-            InvalidateRect(hWnd_main_gui, NULL, FALSE);
+            SetTimer(hWnd, _TIMER_ID_CHECKTHINKRESULT, 100, NULL);
             return 0;
 
 
         case _C4CM_STOPTHINKING:
             if (p_engine == NULL)
             {
+                MessageBox(hWnd, TEXT("StopThinking"), TEXT("Stopthinking"), MB_ICONERROR);
                 return 0;
             }
             p_engine->KillThinkingProcess();
@@ -257,6 +265,7 @@ LRESULT CALLBACK _Connect4GuiMainWndProc(
             if (p_game == NULL)
             {
                 MessageBox(hWnd, TEXT("GetTurn"), TEXT("GetTurn"), MB_ICONERROR);
+                return 0;
             }
             return p_game->GetWhichTurn();
 
@@ -265,6 +274,7 @@ LRESULT CALLBACK _Connect4GuiMainWndProc(
             if (p_game == NULL)
             {
                 MessageBox(hWnd, TEXT("GetState"), TEXT("GetState"), MB_ICONERROR);
+                return 0;
             }
             return p_game->GetGameStatus();
 
@@ -273,6 +283,7 @@ LRESULT CALLBACK _Connect4GuiMainWndProc(
             if (p_game == NULL)
             {
                 MessageBox(hWnd, TEXT("GetWidth"), TEXT("GetWidth"), MB_ICONERROR);
+                return 0;
             }
             return p_game->GetBoardWidth();
 
@@ -281,6 +292,7 @@ LRESULT CALLBACK _Connect4GuiMainWndProc(
             if (p_game == NULL)
             {
                 MessageBox(hWnd, TEXT("GetHeight"), TEXT("GetHeight"), MB_ICONERROR);
+                return 0;
             }
             return p_game->GetBoardHeight();
 
@@ -289,6 +301,7 @@ LRESULT CALLBACK _Connect4GuiMainWndProc(
             if (p_game == NULL)
             {
                 MessageBox(hWnd, TEXT("GetAt"), TEXT("GetAt"), MB_ICONERROR);
+                return 0;
             }
             return p_game->GetAt((int)wp, (int)lp);
 
@@ -303,13 +316,31 @@ LRESULT CALLBACK _Connect4GuiMainWndProc(
 
 
 
+        case WM_TIMER:
+            switch (wp)
+            {
+                case _TIMER_ID_CHECKTHINKRESULT:
+                    if (p_engine->GetResult() >= 0)
+                    {
+                        KillTimer(hWnd, _TIMER_ID_CHECKTHINKRESULT);
+                        p_game->PutCoin(p_engine->GetResult());
+                        delete p_engine;
+                        p_engine = NULL;
+                        InvalidateRect(hWnd_main_gui, NULL, FALSE);
+                    }
+                    break;
+            }
+            return 0;
+
+
+
+
         default:
             return DefWindowProc(hWnd, msg, wp, lp);
     }
 }
 
-#undef BUTTONID_UNDO
-#undef BUTTONID_NEWGAME
+#undef _TIMER_ID_CHECKTHINKRESULT
 
 
 
