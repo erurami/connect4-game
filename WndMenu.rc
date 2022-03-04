@@ -1,0 +1,20 @@
+
+#include "WndMenuId.h"
+
+WNDMENU MENU
+{
+    POPUP "General(&N)"
+    {
+        MENUITEM "Settings(&s)", MENUID_SETTINGS
+        MENUITEM SEPARATOR
+        MENUITEM "Exit(&q)", MENUID_EXIT
+    }
+
+    POPUP "Game(&G)"
+    {
+        MENUITEM "New game(&n)", MENUID_NEWGAME
+        MENUITEM SEPARATOR
+        MENUITEM "Undo(&u)", MENUID_UNDO
+    }
+}
+

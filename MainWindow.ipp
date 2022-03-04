@@ -18,6 +18,8 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
 #include "MainGUI.hpp"
 
+#include "WndMenuId.h"
+
 #define UNICODE
 #include <windows.h>
 
@@ -83,7 +85,7 @@ HWND _Connect4GuiSetupMainWindow(void)
     winc.hIcon         = LoadIcon(NULL, IDI_APPLICATION);
     winc.hCursor       = LoadCursor(NULL, IDC_ARROW);
     winc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
-    winc.lpszMenuName  = NULL;
+    winc.lpszMenuName  = TEXT("WNDMENU");
     winc.lpszClassName = TEXT("Connect4MainWnd");
 
     if (GetClassInfo(hInstance, winc.lpszClassName, &winc))
@@ -190,6 +192,22 @@ LRESULT CALLBACK _Connect4GuiMainWndProc(
             return 0;
 
 
+        case WM_COMMAND:
+            if (lp == 0)
+            {
+                switch (LOWORD(wp))
+                {
+                    case MENUID_EXIT:
+                        PostMessage(hWnd, WM_CLOSE, 0, 0);
+                        break;
+                    case MENUID_UNDO:
+                        PostMessage(hWnd, _C4CM_UNDO, 0, 0);
+                        break;
+                }
+            }
+            return 0;
+
+
 
 
         case _C4WM_ADJUSTCHILDWND:
@@ -234,11 +252,16 @@ LRESULT CALLBACK _Connect4GuiMainWndProc(
 
 
         case _C4CM_UNDO:
-            p_game->Undo();
-            while (p_game->GetWhichTurn() != 1)
+            if (p_game == NULL)
             {
-                p_game->Undo();
+                return 0;
             }
+            if (p_game->GetWhichTurn() == 2)
+            {
+                return 0;
+            }
+            p_game->Undo();
+            p_game->Undo();
             InvalidateRect(hWnd_main_gui, NULL, FALSE);
             return 0;
 
