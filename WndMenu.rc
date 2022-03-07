@@ -1,6 +1,8 @@
 
 #include "WndMenuId.h"
 
+#include <windows.h>
+
 WNDMENU MENU
 {
     POPUP "General(&N)"
@@ -16,5 +18,24 @@ WNDMENU MENU
         MENUITEM SEPARATOR
         MENUITEM "Undo(&u)", MENUID_UNDO
     }
+}
+
+
+CONNECT4SETTINGS DIALOG 10, 10, 260, 70
+FONT 10 "Segoe UI"
+STYLE WS_CAPTION | WS_BORDER | WS_SYSMENU
+CAPTION "Settings"
+{
+    // y = 10
+    LTEXT   "Thinking Depth : ", -1, 10, 10, 68, 10
+    EDITTEXT     IDC_SETTINGS_THINKDEPTH     , 68, 10, 32, 10, ES_AUTOHSCROLL
+    CONTROL  "", IDC_SETTINGS_THINKDEPTH_SPIN, "msctls_updown32", UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS, 78, 10, 15, 12,
+
+    // y = 20
+    LTEXT   "(As this value increases, the thinking time will increase)", -1, 10, 20, 260, 10
+
+    // y = 50
+    PUSHBUTTON "OK"    , IDC_SETTINGS_OK    , 175, 50, 30, 10
+    PUSHBUTTON "Cancel", IDC_SETTINGS_CANCEL, 210, 50, 40, 10
 }
 

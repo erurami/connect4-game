@@ -20,6 +20,8 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
 #include "WndMenuId.h"
 
+#include "SettingsWnd.hpp"
+
 #define UNICODE
 #include <windows.h>
 
@@ -134,6 +136,10 @@ LRESULT CALLBACK _Connect4GuiMainWndProc(
     static FourInARow::Game* p_game;
     static Connect4Ai* p_engine;
 
+
+    // settings vars
+    static int think_depth;
+
     switch (msg)
     {
 
@@ -172,6 +178,8 @@ LRESULT CALLBACK _Connect4GuiMainWndProc(
 
             hInstance = GetModuleHandle(NULL);
 
+            SendMessage(hWnd, _C4CM_LOADSETTINGS, ((CREATESTRUCT*)lp)->cx, ((CREATESTRUCT*)lp)->cy);
+
             _Connect4GuiRegisterMainGuiWndClass(TEXT("_Connect4MainGui"));
             hWnd_main_gui = CreateWindow(
                     TEXT("_Connect4MainGui"), TEXT(""),
@@ -200,11 +208,17 @@ LRESULT CALLBACK _Connect4GuiMainWndProc(
                     case MENUID_EXIT:
                         PostMessage(hWnd, WM_CLOSE, 0, 0);
                         break;
+
                     case MENUID_UNDO:
                         PostMessage(hWnd, _C4CM_UNDO, 0, 0);
                         break;
+
                     case MENUID_NEWGAME:
                         PostMessage(hWnd, _C4CM_INITIALIZEWITHWZD, 0, 0);
+                        break;
+
+                    case MENUID_SETTINGS:
+                        PostMessage(hWnd, _C4CM_SETTINGS, 0, 0);
                         break;
                 }
             }
@@ -239,7 +253,7 @@ LRESULT CALLBACK _Connect4GuiMainWndProc(
 
         case _C4CM_INITIALIZEWITHWZD:
             // TODO:
-            SendMessage(hWnd, _C4CM_INITIALIZE, 6, 7);
+            SendMessage(hWnd, _C4CM_INITIALIZE, 7, 6);
             return 0;
 
 
@@ -344,6 +358,22 @@ LRESULT CALLBACK _Connect4GuiMainWndProc(
                 return FALSE;
             }
             return TRUE;
+
+
+        case _C4CM_SETTINGS:
+            _Connect4Settings(hWnd);
+            return 0;
+
+
+        case _C4CM_LOADSETTINGS:
+            {
+            Connect4Settings settings;
+            _Connect4SettingsLoadSettings(&settings, hWnd);
+
+            think_depth = settings.m_ThinkingDepth;
+            Connect4Ai::SetThinkDepth(think_depth);
+            return 0;
+            }
 
 
 

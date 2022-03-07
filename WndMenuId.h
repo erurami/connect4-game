@@ -4,3 +4,8 @@
 #define MENUID_NEWGAME  40001
 #define MENUID_UNDO     40002
 
+#define IDC_SETTINGS_THINKDEPTH      1
+#define IDC_SETTINGS_THINKDEPTH_SPIN 2
+#define IDC_SETTINGS_OK              3
+#define IDC_SETTINGS_CANCEL          4
+
