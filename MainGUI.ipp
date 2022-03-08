@@ -300,10 +300,11 @@ LRESULT CALLBACK _Connect4GuiGuiWndProc(
 #undef _BUTTON_ID_UNDO
 #undef _BUTTON_ID_STOP
 
+COLORREF _Connect4GuiGuiBlendColor(COLORREF color1, COLORREF color2, int ratio1, int ratio2);
 
 void _Connect4GuiGuiDrawGameBoard(HDC hdc, _Connect4GuiGamePaintInfos* pPaintInfos)
 {
-    HBRUSH hBrush_background = CreateSolidBrush(GetBackgroundColor());
+    HBRUSH hBrush_background = CreateSolidBrush(GetBlendedTheme("B9B4F2"));
 
     FillRect(hdc, &pPaintInfos->m_clientRect, hBrush_background);
 
@@ -319,6 +320,7 @@ void _Connect4GuiGuiDrawGameBoard(HDC hdc, _Connect4GuiGamePaintInfos* pPaintInf
         return;
     }
 
+
     HWND hWnd_main = pPaintInfos->m_hWndMain;
 
     int game_width  = (int)SendMessage(hWnd_main, _C4CM_GETGAMEWIDTH , 0, 0);
@@ -330,7 +332,13 @@ void _Connect4GuiGuiDrawGameBoard(HDC hdc, _Connect4GuiGamePaintInfos* pPaintInf
     int cell_width  = board_x_length / game_width;
     int cell_height = board_y_length / game_height;
 
-    SelectObject(hdc, (HPEN)GetStockObject(WHITE_PEN));
+    HBRUSH hBrush_Player1 = CreateSolidBrush(_Connect4GuiGuiBlendColor(GetBlendedTheme("F3B1"), RGB(255, 0, 0), 1, 5));
+    HBRUSH hBrush_Player2 = CreateSolidBrush(_Connect4GuiGuiBlendColor(GetBlendedTheme("F3B1"), RGB(0, 255, 0), 1, 5));
+
+    HPEN hPen_Line = CreatePen(PS_SOLID, 0, GetBlendedTheme("A5F1"));
+
+    SelectObject(hdc, hPen_Line);
+
     for (int x = 0; x < game_width; x++)
     {
         for (int y = 0; y < game_height; y++)
@@ -341,10 +349,10 @@ void _Connect4GuiGuiDrawGameBoard(HDC hdc, _Connect4GuiGamePaintInfos* pPaintInf
                     SelectObject(hdc, (HBRUSH)GetStockObject(NULL_BRUSH));
                     break;
                 case 1:
-                    SelectObject(hdc, (HBRUSH)GetStockObject(GRAY_BRUSH));
+                    SelectObject(hdc, hBrush_Player1);
                     break;
                 case 2:
-                    SelectObject(hdc, (HBRUSH)GetStockObject(WHITE_BRUSH));
+                    SelectObject(hdc, hBrush_Player2);
                     break;
             }
             RoundRect(
@@ -357,6 +365,11 @@ void _Connect4GuiGuiDrawGameBoard(HDC hdc, _Connect4GuiGamePaintInfos* pPaintInf
                     );
         }
     }
+
+    DeleteObject(hBrush_Player1);
+    DeleteObject(hBrush_Player2);
+
+    DeleteObject(hPen_Line);
 
     switch (pPaintInfos->m_gameState)
     {
@@ -373,6 +386,28 @@ void _Connect4GuiGuiDrawGameBoard(HDC hdc, _Connect4GuiGamePaintInfos* pPaintInf
             TextOut(hdc, 0, pPaintInfos->m_boardRect.top + textmetric.tmAscent, TEXT("Click \"new\" to start new game."), 30);
             break;
     }
+}
+
+
+COLORREF _Connect4GuiGuiBlendColor(COLORREF color1, COLORREF color2, int ratio1, int ratio2)
+{
+    int result_r = 0;
+    int result_g = 0;
+    int result_b = 0;
+
+    result_r +=  GetRValue(color1) * ratio1;
+    result_r +=  GetRValue(color2) * ratio2;
+    result_r /= (ratio1 + ratio2);
+
+    result_g +=  GetGValue(color1) * ratio1;
+    result_g +=  GetGValue(color2) * ratio2;
+    result_g /= (ratio1 + ratio2);
+
+    result_b +=  GetBValue(color1) * ratio1;
+    result_b +=  GetBValue(color2) * ratio2;
+    result_b /= (ratio1 + ratio2);
+
+    return RGB(result_r, result_g, result_b);
 }
 
 
