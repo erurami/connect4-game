@@ -89,6 +89,9 @@ LRESULT CALLBACK _Connect4GuiGuiWndProc(
     static HWND hWnd_button_undo;
     static HWND hWnd_button_stop_thinking;
 
+    static HFONT hFont_main;
+
+
     // style vars
     static int toolbar_height = 50;
 
@@ -123,6 +126,18 @@ LRESULT CALLBACK _Connect4GuiGuiWndProc(
 
             is_game_initialized = (SendMessage(hWnd_parent, _C4CM_ISINITIALIZED, 0, 0) == TRUE);
 
+            hFont_main = CreateFont(
+                    32, 0,
+                    0, 0, FW_NORMAL,
+                    FALSE, FALSE, FALSE,
+                    DEFAULT_CHARSET,
+                    OUT_DEFAULT_PRECIS,
+                    CLIP_DEFAULT_PRECIS,
+                    PROOF_QUALITY,
+                    VARIABLE_PITCH | FF_SWISS,
+                    NULL
+                    );
+
 
             hWnd_button_newgame = CreateWindow(
                     TEXT("BUTTON"), TEXT("New"),
@@ -148,6 +163,11 @@ LRESULT CALLBACK _Connect4GuiGuiWndProc(
             InvalidateRect(hWnd, NULL, FALSE);
 
             ShowWindow(hWnd, SW_SHOW);
+            return 0;
+
+
+        case WM_DESTROY:
+            DeleteObject(hFont_main);
             return 0;
 
 
@@ -215,6 +235,7 @@ LRESULT CALLBACK _Connect4GuiGuiWndProc(
 
             _Connect4GuiGamePaintInfos paint_infos;
 
+
             if (is_game_initialized)
             {
                 int game_board_width_now  = (int)SendMessage(hWnd_parent, _C4CM_GETGAMEWIDTH , 0, 0);
@@ -224,15 +245,6 @@ LRESULT CALLBACK _Connect4GuiGuiWndProc(
 
                 game_board_width  = game_board_width_now;
                 game_board_height = game_board_height_now;
-
-                if (game_board_need_recalculate)
-                {
-                    rect_game_board = rect_client;
-                    rect_game_board.top = toolbar_height;
-                    _Connect4GuiBiggestRectangle(&rect_game_board, game_board_width, game_board_height);
-                }
-
-                paint_infos.m_boardRect = rect_game_board;
 
                 if (SendMessage(hWnd_parent, _C4CM_GETSTATE, 0, 0) == 0)
                 {
@@ -248,9 +260,18 @@ LRESULT CALLBACK _Connect4GuiGuiWndProc(
                 game_state = 0;
             }
 
+            if (game_board_need_recalculate)
+            {
+                rect_game_board = rect_client;
+                rect_game_board.top = toolbar_height;
+                _Connect4GuiBiggestRectangle(&rect_game_board, game_board_width, game_board_height);
+                game_board_need_recalculate = false;
+            }
+
             paint_infos.m_hWndMain = hWnd_parent;
 
             paint_infos.m_clientRect = rect_client;
+            paint_infos.m_boardRect = rect_game_board;
 
             paint_infos.m_gameState = game_state;
             paint_infos.m_isInitialized = is_game_initialized;
@@ -266,6 +287,8 @@ LRESULT CALLBACK _Connect4GuiGuiWndProc(
 
             hdc_virtual = CreateCompatibleDC(hdc);
             SelectObject(hdc_virtual, hBitmap);
+
+            SelectObject(hdc_virtual, hFont_main);
 
             _Connect4GuiGuiDrawGameBoard(hdc_virtual, &paint_infos);
 
@@ -331,6 +354,8 @@ LRESULT CALLBACK _Connect4GuiGuiWndProc(
 
 COLORREF _Connect4GuiGuiBlendColor(COLORREF color1, COLORREF color2, int ratio1, int ratio2);
 
+void _Connect4GuiGuiDrawTextCenter(HDC hdc, LPTSTR string, RECT rect);
+
 void _Connect4GuiGuiDrawGameBoard(HDC hdc, _Connect4GuiGamePaintInfos* pPaintInfos)
 {
     HBRUSH hBrush_background = CreateSolidBrush(GetBlendedTheme("B9B4F2"));
@@ -340,15 +365,31 @@ void _Connect4GuiGuiDrawGameBoard(HDC hdc, _Connect4GuiGamePaintInfos* pPaintInf
     DeleteObject(hBrush_background);
 
 
+    SetBkMode(hdc, TRANSPARENT);
+    SetTextColor(hdc, GetBlendedTheme("F9F4B2"));
+
+
+
     TEXTMETRIC textmetric;
     GetTextMetrics(hdc, &textmetric);
 
     if (pPaintInfos->m_isInitialized == false)
     {
-        TextOut(hdc, 0, pPaintInfos->m_boardRect.top, TEXT("Click \"new\" to start new game."), 30);
+        _Connect4GuiGuiDrawTextCenter(hdc, TEXT("Click \"new\" to start new game"), pPaintInfos->m_boardRect);
         return;
     }
 
+
+    COLORREF color_Player1 = _Connect4GuiGuiBlendColor(GetBlendedTheme("F3B1"), RGB(255, 0, 0), 1, 5);
+    COLORREF color_Player2 = _Connect4GuiGuiBlendColor(GetBlendedTheme("F3B1"), RGB(0, 255, 0), 1, 5);
+    COLORREF color_Line    = GetBlendedTheme("A5F1");
+
+    if (pPaintInfos->m_gameState >= 3)
+    {
+        color_Player1 = _Connect4GuiGuiBlendColor(color_Player1, GetBlendedTheme("F1B5"), 1, 3);
+        color_Player2 = _Connect4GuiGuiBlendColor(color_Player2, GetBlendedTheme("F1B5"), 1, 3);
+        color_Line    = _Connect4GuiGuiBlendColor(color_Line   , GetBlendedTheme("F1B5"), 1, 3);
+    }
 
     HWND hWnd_main = pPaintInfos->m_hWndMain;
 
@@ -364,10 +405,10 @@ void _Connect4GuiGuiDrawGameBoard(HDC hdc, _Connect4GuiGamePaintInfos* pPaintInf
     int cell_roundness = CONNECT4_CELL_ROUNDNESS;
     int cell_gap = CONNECT4_CELL_GAP;
 
-    HBRUSH hBrush_Player1 = CreateSolidBrush(_Connect4GuiGuiBlendColor(GetBlendedTheme("F3B1"), RGB(255, 0, 0), 1, 5));
-    HBRUSH hBrush_Player2 = CreateSolidBrush(_Connect4GuiGuiBlendColor(GetBlendedTheme("F3B1"), RGB(0, 255, 0), 1, 5));
+    HBRUSH hBrush_Player1 = CreateSolidBrush(color_Player1);
+    HBRUSH hBrush_Player2 = CreateSolidBrush(color_Player2);
 
-    HPEN hPen_Line = CreatePen(PS_SOLID, 0, GetBlendedTheme("A5F1"));
+    HPEN hPen_Line = CreatePen(PS_SOLID, 0, color_Line);
 
     for (int x = 0; x < game_width; x++)
     {
@@ -413,20 +454,37 @@ void _Connect4GuiGuiDrawGameBoard(HDC hdc, _Connect4GuiGamePaintInfos* pPaintInf
     switch (pPaintInfos->m_gameState)
     {
         case 3:
-            TextOut(hdc, 0, pPaintInfos->m_boardRect.top, TEXT("You won!"), 8);
-            TextOut(hdc, 0, pPaintInfos->m_boardRect.top + textmetric.tmAscent, TEXT("Click \"new\" to start new game."), 30);
+            _Connect4GuiGuiDrawTextCenter(hdc, TEXT("You won!\nClick \"new\" to start new game."), pPaintInfos->m_boardRect);
             break;
         case 4:
-            TextOut(hdc, 0, pPaintInfos->m_boardRect.top, TEXT("Bot won!"), 8);
-            TextOut(hdc, 0, pPaintInfos->m_boardRect.top + textmetric.tmAscent, TEXT("Click \"new\" to start new game."), 30);
+            _Connect4GuiGuiDrawTextCenter(hdc, TEXT("Bot won!\nClick \"new\" to start new game."), pPaintInfos->m_boardRect);
             break;
         case 5:
-            TextOut(hdc, 0, pPaintInfos->m_boardRect.top, TEXT("Draw"), 4);
-            TextOut(hdc, 0, pPaintInfos->m_boardRect.top + textmetric.tmAscent, TEXT("Click \"new\" to start new game."), 30);
+            _Connect4GuiGuiDrawTextCenter(hdc, TEXT("draw.\nClick \"new\" to start new game."), pPaintInfos->m_boardRect);
             break;
     }
 }
 
+void _Connect4GuiGuiDrawTextCenter(HDC hdc, LPTSTR string, RECT rect)
+{
+    RECT rect_text = rect;
+
+    DrawText(hdc, string, -1, &rect_text, DT_CALCRECT);
+
+    int text_width  = rect_text.right  - rect_text.left;
+    int text_height = rect_text.bottom - rect_text.top;
+
+    int rect_width  = rect.right  - rect.left;
+    int rect_height = rect.bottom - rect.top;
+
+    rect.left += (rect_width  - text_width ) / 2;
+    rect.top  += (rect_height - text_height) / 2;
+
+    rect.right  = rect.left + text_width;
+    rect.bottom = rect.top  + text_height;
+
+    DrawText(hdc, string, -1, &rect, DT_CENTER);
+}
 
 COLORREF _Connect4GuiGuiBlendColor(COLORREF color1, COLORREF color2, int ratio1, int ratio2)
 {
