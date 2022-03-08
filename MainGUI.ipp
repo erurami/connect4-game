@@ -357,11 +357,11 @@ void _Connect4GuiGuiDrawGameBoard(HDC hdc, _Connect4GuiGamePaintInfos* pPaintInf
             }
             RoundRect(
                     hdc,
-                    pPaintInfos->m_boardRect.left + cell_width  * x,
-                    pPaintInfos->m_boardRect.top  + cell_height * y,
-                    pPaintInfos->m_boardRect.left + cell_width  * (x + 1),
-                    pPaintInfos->m_boardRect.top  + cell_height * (y + 1),
-                    5, 5
+                    pPaintInfos->m_boardRect.left + cell_width  * x + CONNECT4_CELL_GAP,
+                    pPaintInfos->m_boardRect.top  + cell_height * y + CONNECT4_CELL_GAP,
+                    pPaintInfos->m_boardRect.left + cell_width  * (x + 1) - CONNECT4_CELL_GAP,
+                    pPaintInfos->m_boardRect.top  + cell_height * (y + 1) - CONNECT4_CELL_GAP,
+                    CONNECT4_CELL_ROUNDNESS, CONNECT4_CELL_ROUNDNESS
                     );
         }
     }
