@@ -53,15 +53,26 @@ int _Connect4GuiRegisterMainGuiWndClass(LPTSTR strWndClassName)
 
 typedef struct __Connect4GuiGamePaintInfos
 {
+    // win32 vars
+    HWND m_hWndMain;
 
-    bool m_isInitialized;
+    // style vars
+    RECT m_clientRect;
     RECT m_boardRect;
 
+    // game status vars
+    bool m_isInitialized;
     int  m_gameState;
+
+    // no ghost
+    int  m_ghostCoinColumn;
+
 } _Connect4GuiGamePaintInfos;
 
-void _Connect4GuiGuiDrawGameBoard(HDC hdc, HWND hMainWindow, _Connect4GuiGamePaintInfos* pPaintInfos);
+void _Connect4GuiGuiDrawGameBoard(HDC hdc, _Connect4GuiGamePaintInfos* pPaintInfos);
+
 void _Connect4GuiBiggestRectangle(LPRECT pRect, int x, int y);
+
 
 LRESULT CALLBACK _Connect4GuiGuiWndProc(
         HWND hWnd,
@@ -80,12 +91,15 @@ LRESULT CALLBACK _Connect4GuiGuiWndProc(
 
     // style vars
     static int toolbar_height = 50;
-    static bool is_game_initialized;
 
     static RECT rect_client;
     static RECT rect_game_board;
 
+    static bool game_board_need_recalculate;
+
     // game vars
+    static bool is_game_initialized;
+
     static int game_state;
     // 0 : uninitialized
     // 1 : user turn
@@ -94,14 +108,21 @@ LRESULT CALLBACK _Connect4GuiGuiWndProc(
     // 4 : bot won
     // 5 : draw
 
+    static int game_board_width;
+    static int game_board_height;
+
     switch (msg)
     {
 
         case WM_CREATE:
+            GetClientRect(hWnd, &rect_client);
+            game_board_need_recalculate = true;
+
             hInstance = GetModuleHandle(NULL);
             hWnd_parent = GetParent(hWnd);
 
             is_game_initialized = (SendMessage(hWnd_parent, _C4CM_ISINITIALIZED, 0, 0) == TRUE);
+
 
             hWnd_button_newgame = CreateWindow(
                     TEXT("BUTTON"), TEXT("New"),
@@ -137,7 +158,7 @@ LRESULT CALLBACK _Connect4GuiGuiWndProc(
             {
 
                 case _BUTTON_ID_NEWGAME:
-                    SendMessage(hWnd_parent, _C4CM_INITIALIZEWITHWZD, 7, 6);
+                    SendMessage(hWnd_parent, _C4CM_INITIALIZEWITHWZD, 0, 0);
                     break;
 
                 case _BUTTON_ID_UNDO:
@@ -169,6 +190,8 @@ LRESULT CALLBACK _Connect4GuiGuiWndProc(
 
 
         case WM_SIZE:
+            GetClientRect(hWnd, &rect_client);
+            game_board_need_recalculate = true;
             PostMessage(hWnd, _C4GWM_REDRAW, 0, 0);
             return 0;
 
@@ -181,24 +204,29 @@ LRESULT CALLBACK _Connect4GuiGuiWndProc(
 
 
         case _C4GWM_REDRAW:
-            is_game_initialized = (SendMessage(hWnd_parent, _C4CM_ISINITIALIZED, 0, 0) == TRUE);
             {
-            PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(hWnd, &ps);
+            is_game_initialized = (SendMessage(hWnd_parent, _C4CM_ISINITIALIZED, 0, 0) == TRUE);
 
             _Connect4GuiGamePaintInfos paint_infos;
 
             if (is_game_initialized)
             {
-                GetClientRect(hWnd, &rect_client);
-                rect_game_board = rect_client;
-                rect_game_board.top = toolbar_height;
-                int game_board_width  = (int)SendMessage(hWnd_parent, _C4CM_GETGAMEWIDTH , 0, 0);
-                int game_board_height = (int)SendMessage(hWnd_parent, _C4CM_GETGAMEHEIGHT, 0, 0);
-                _Connect4GuiBiggestRectangle(&rect_game_board, game_board_width, game_board_height);
+                int game_board_width_now  = (int)SendMessage(hWnd_parent, _C4CM_GETGAMEWIDTH , 0, 0);
+                int game_board_height_now = (int)SendMessage(hWnd_parent, _C4CM_GETGAMEHEIGHT, 0, 0);
+
+                game_board_need_recalculate = game_board_need_recalculate || (game_board_width_now != game_board_width) || (game_board_height_now != game_board_height);
+
+                game_board_width  = game_board_width_now;
+                game_board_height = game_board_height_now;
+
+                if (game_board_need_recalculate)
+                {
+                    rect_game_board = rect_client;
+                    rect_game_board.top = toolbar_height;
+                    _Connect4GuiBiggestRectangle(&rect_game_board, game_board_width, game_board_height);
+                }
 
                 paint_infos.m_boardRect = rect_game_board;
-
 
                 if (SendMessage(hWnd_parent, _C4CM_GETSTATE, 0, 0) == 0)
                 {
@@ -213,20 +241,23 @@ LRESULT CALLBACK _Connect4GuiGuiWndProc(
             {
                 game_state = 0;
             }
+
+            paint_infos.m_hWndMain = hWnd_parent;
+
+            paint_infos.m_clientRect = rect_client;
+
             paint_infos.m_gameState = game_state;
             paint_infos.m_isInitialized = is_game_initialized;
 
 
-            HBRUSH hBrush_background = CreateSolidBrush(GetBackgroundColor());
 
-            FillRect(hdc, &rect_client, hBrush_background);
+            PAINTSTRUCT ps;
+            HDC hdc = BeginPaint(hWnd, &ps);
 
-            DeleteObject(hBrush_background);
-
-
-            _Connect4GuiGuiDrawGameBoard(hdc, hWnd_parent, &paint_infos);
+            _Connect4GuiGuiDrawGameBoard(hdc, &paint_infos);
 
             EndPaint(hWnd, &ps);
+
 
             switch (game_state)
             {
@@ -270,8 +301,15 @@ LRESULT CALLBACK _Connect4GuiGuiWndProc(
 #undef _BUTTON_ID_STOP
 
 
-void _Connect4GuiGuiDrawGameBoard(HDC hdc, HWND hMainWindow, _Connect4GuiGamePaintInfos* pPaintInfos)
+void _Connect4GuiGuiDrawGameBoard(HDC hdc, _Connect4GuiGamePaintInfos* pPaintInfos)
 {
+    HBRUSH hBrush_background = CreateSolidBrush(GetBackgroundColor());
+
+    FillRect(hdc, &pPaintInfos->m_clientRect, hBrush_background);
+
+    DeleteObject(hBrush_background);
+
+
     TEXTMETRIC textmetric;
     GetTextMetrics(hdc, &textmetric);
 
@@ -281,8 +319,10 @@ void _Connect4GuiGuiDrawGameBoard(HDC hdc, HWND hMainWindow, _Connect4GuiGamePai
         return;
     }
 
-    int game_width  = (int)SendMessage(hMainWindow, _C4CM_GETGAMEWIDTH , 0, 0);
-    int game_height = (int)SendMessage(hMainWindow, _C4CM_GETGAMEHEIGHT, 0, 0);
+    HWND hWnd_main = pPaintInfos->m_hWndMain;
+
+    int game_width  = (int)SendMessage(hWnd_main, _C4CM_GETGAMEWIDTH , 0, 0);
+    int game_height = (int)SendMessage(hWnd_main, _C4CM_GETGAMEHEIGHT, 0, 0);
 
     int board_x_length = (pPaintInfos->m_boardRect.right  - pPaintInfos->m_boardRect.left);
     int board_y_length = (pPaintInfos->m_boardRect.bottom - pPaintInfos->m_boardRect.top );
@@ -295,7 +335,7 @@ void _Connect4GuiGuiDrawGameBoard(HDC hdc, HWND hMainWindow, _Connect4GuiGamePai
     {
         for (int y = 0; y < game_height; y++)
         {
-            switch (SendMessage(hMainWindow, _C4CM_GETAT, x, y))
+            switch (SendMessage(hWnd_main, _C4CM_GETAT, x, y))
             {
                 case 0:
                     SelectObject(hdc, (HBRUSH)GetStockObject(NULL_BRUSH));
@@ -338,9 +378,13 @@ void _Connect4GuiGuiDrawGameBoard(HDC hdc, HWND hMainWindow, _Connect4GuiGamePai
 
 void _Connect4GuiBiggestRectangle(LPRECT pRect, int x, int y)
 {
+    if (x == 0 || y == 0)
+    {
+        return;
+    }
+
     int frame_width  = pRect->right  - pRect->left;
     int frame_height = pRect->bottom - pRect->top;
-
 
     int biggest_width  = frame_width;
     int biggest_height = frame_width * y / x;
