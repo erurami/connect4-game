@@ -22,7 +22,7 @@ int _Connect4GuiRegisterMainGuiWndClass(LPTSTR strWndClassName)
 
     WNDCLASS winc;
 
-    winc.style         = CS_HREDRAW | CS_VREDRAW;
+    winc.style         = 0;
     winc.lpfnWndProc   = _Connect4GuiGuiWndProc;
     winc.cbClsExtra    = 0;
     winc.cbWndExtra    = 0;
@@ -192,13 +192,19 @@ LRESULT CALLBACK _Connect4GuiGuiWndProc(
         case WM_SIZE:
             GetClientRect(hWnd, &rect_client);
             game_board_need_recalculate = true;
-            PostMessage(hWnd, _C4GWM_REDRAW, 0, 0);
+            SendMessage(hWnd, _C4GWM_REDRAW, 0, 0);
             return 0;
 
 
         case WM_PAINT:
-            PostMessage(hWnd, _C4GWM_REDRAW, 0, 0);
+            SendMessage(hWnd, _C4GWM_REDRAW, 0, 0);
             return 0;
+
+
+
+
+        case WM_ERASEBKGND:
+            return 1;
 
 
 
@@ -251,10 +257,33 @@ LRESULT CALLBACK _Connect4GuiGuiWndProc(
 
 
 
-            PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(hWnd, &ps);
+            HDC hdc_virtual;
+            HDC hdc;
 
-            _Connect4GuiGuiDrawGameBoard(hdc, &paint_infos);
+            hdc = GetDC(hWnd);
+
+            HBITMAP hBitmap = CreateCompatibleBitmap(hdc, rect_client.right - rect_client.left, rect_client.bottom - rect_client.top);
+
+            hdc_virtual = CreateCompatibleDC(hdc);
+            SelectObject(hdc_virtual, hBitmap);
+
+            _Connect4GuiGuiDrawGameBoard(hdc_virtual, &paint_infos);
+
+            ReleaseDC(hWnd, hdc);
+            DeleteObject(hBitmap);
+
+            PAINTSTRUCT ps;
+            hdc = BeginPaint(hWnd, &ps);
+
+            BitBlt(
+                    hdc,
+                    0, 0,
+                    rect_client.right  - rect_client.left,
+                    rect_client.bottom - rect_client.top,
+                    hdc_virtual,
+                    0, 0,
+                    SRCCOPY
+                    );
 
             EndPaint(hWnd, &ps);
 
@@ -333,23 +362,34 @@ void _Connect4GuiGuiDrawGameBoard(HDC hdc, _Connect4GuiGamePaintInfos* pPaintInf
     int cell_height = board_y_length / game_height;
 
     int cell_roundness = CONNECT4_CELL_ROUNDNESS;
+    int cell_gap = CONNECT4_CELL_GAP;
 
     HBRUSH hBrush_Player1 = CreateSolidBrush(_Connect4GuiGuiBlendColor(GetBlendedTheme("F3B1"), RGB(255, 0, 0), 1, 5));
     HBRUSH hBrush_Player2 = CreateSolidBrush(_Connect4GuiGuiBlendColor(GetBlendedTheme("F3B1"), RGB(0, 255, 0), 1, 5));
 
     HPEN hPen_Line = CreatePen(PS_SOLID, 0, GetBlendedTheme("A5F1"));
 
-    SelectObject(hdc, hPen_Line);
-
     for (int x = 0; x < game_width; x++)
     {
         for (int y = 0; y < game_height; y++)
         {
+            int cell_left   = pPaintInfos->m_boardRect.left + cell_width  * x + cell_gap;
+            int cell_top    = pPaintInfos->m_boardRect.top  + cell_height * y + cell_gap;
+            int cell_right  = pPaintInfos->m_boardRect.left + cell_width  * (x + 1) - cell_gap;
+            int cell_bottom = pPaintInfos->m_boardRect.top  + cell_height * (y + 1) - cell_gap;
+
+            SelectObject(hdc, hPen_Line);
+            SelectObject(hdc, (HBRUSH)GetStockObject(NULL_BRUSH));
+
+            RoundRect(
+                    hdc,
+                    cell_left, cell_top, cell_right, cell_bottom,
+                    cell_roundness, cell_roundness
+                    );
+
+            SelectObject(hdc, (HPEN)GetStockObject(NULL_PEN));
             switch (SendMessage(hWnd_main, _C4CM_GETAT, x, y))
             {
-                case 0:
-                    SelectObject(hdc, (HBRUSH)GetStockObject(NULL_BRUSH));
-                    break;
                 case 1:
                     SelectObject(hdc, hBrush_Player1);
                     break;
@@ -357,14 +397,11 @@ void _Connect4GuiGuiDrawGameBoard(HDC hdc, _Connect4GuiGamePaintInfos* pPaintInf
                     SelectObject(hdc, hBrush_Player2);
                     break;
             }
-            RoundRect(
+
+            Ellipse(
                     hdc,
-                    pPaintInfos->m_boardRect.left + cell_width  * x + CONNECT4_CELL_GAP,
-                    pPaintInfos->m_boardRect.top  + cell_height * y + CONNECT4_CELL_GAP,
-                    pPaintInfos->m_boardRect.left + cell_width  * (x + 1) - CONNECT4_CELL_GAP,
-                    pPaintInfos->m_boardRect.top  + cell_height * (y + 1) - CONNECT4_CELL_GAP,
-                    cell_roundness, cell_roundness
-                    );
+                    cell_left + 2, cell_top + 2, cell_right - 1, cell_bottom - 1
+                   );
         }
     }
 
