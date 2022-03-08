@@ -332,6 +332,8 @@ void _Connect4GuiGuiDrawGameBoard(HDC hdc, _Connect4GuiGamePaintInfos* pPaintInf
     int cell_width  = board_x_length / game_width;
     int cell_height = board_y_length / game_height;
 
+    int cell_roundness = CONNECT4_CELL_ROUNDNESS;
+
     HBRUSH hBrush_Player1 = CreateSolidBrush(_Connect4GuiGuiBlendColor(GetBlendedTheme("F3B1"), RGB(255, 0, 0), 1, 5));
     HBRUSH hBrush_Player2 = CreateSolidBrush(_Connect4GuiGuiBlendColor(GetBlendedTheme("F3B1"), RGB(0, 255, 0), 1, 5));
 
@@ -361,7 +363,7 @@ void _Connect4GuiGuiDrawGameBoard(HDC hdc, _Connect4GuiGamePaintInfos* pPaintInf
                     pPaintInfos->m_boardRect.top  + cell_height * y + CONNECT4_CELL_GAP,
                     pPaintInfos->m_boardRect.left + cell_width  * (x + 1) - CONNECT4_CELL_GAP,
                     pPaintInfos->m_boardRect.top  + cell_height * (y + 1) - CONNECT4_CELL_GAP,
-                    CONNECT4_CELL_ROUNDNESS, CONNECT4_CELL_ROUNDNESS
+                    cell_roundness, cell_roundness
                     );
         }
     }
