@@ -18,6 +18,10 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
 #include "MainGUI.hpp"
 
+#include "WndMenuId.h"
+
+#include "SettingsWnd.hpp"
+
 #define UNICODE
 #include <windows.h>
 
@@ -83,7 +87,7 @@ HWND _Connect4GuiSetupMainWindow(void)
     winc.hIcon         = LoadIcon(NULL, IDI_APPLICATION);
     winc.hCursor       = LoadCursor(NULL, IDC_ARROW);
     winc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
-    winc.lpszMenuName  = NULL;
+    winc.lpszMenuName  = TEXT("WNDMENU");
     winc.lpszClassName = TEXT("Connect4MainWnd");
 
     if (GetClassInfo(hInstance, winc.lpszClassName, &winc))
@@ -132,6 +136,10 @@ LRESULT CALLBACK _Connect4GuiMainWndProc(
     static FourInARow::Game* p_game;
     static Connect4Ai* p_engine;
 
+
+    // settings vars
+    static int think_depth;
+
     switch (msg)
     {
 
@@ -170,6 +178,8 @@ LRESULT CALLBACK _Connect4GuiMainWndProc(
 
             hInstance = GetModuleHandle(NULL);
 
+            SendMessage(hWnd, _C4CM_LOADSETTINGS, ((CREATESTRUCT*)lp)->cx, ((CREATESTRUCT*)lp)->cy);
+
             _Connect4GuiRegisterMainGuiWndClass(TEXT("_Connect4MainGui"));
             hWnd_main_gui = CreateWindow(
                     TEXT("_Connect4MainGui"), TEXT(""),
@@ -187,6 +197,31 @@ LRESULT CALLBACK _Connect4GuiMainWndProc(
 
         case WM_SIZE:
             SendMessage(hWnd, _C4WM_ADJUSTCHILDWND, LOWORD(lp), HIWORD(lp));
+            return 0;
+
+
+        case WM_COMMAND:
+            if (lp == 0)
+            {
+                switch (LOWORD(wp))
+                {
+                    case MENUID_EXIT:
+                        PostMessage(hWnd, WM_CLOSE, 0, 0);
+                        break;
+
+                    case MENUID_UNDO:
+                        PostMessage(hWnd, _C4CM_UNDO, 0, 0);
+                        break;
+
+                    case MENUID_NEWGAME:
+                        PostMessage(hWnd, _C4CM_INITIALIZEWITHWZD, 0, 0);
+                        break;
+
+                    case MENUID_SETTINGS:
+                        PostMessage(hWnd, _C4CM_SETTINGS, 0, 0);
+                        break;
+                }
+            }
             return 0;
 
 
@@ -216,6 +251,12 @@ LRESULT CALLBACK _Connect4GuiMainWndProc(
             return 0;
 
 
+        case _C4CM_INITIALIZEWITHWZD:
+            // TODO:
+            SendMessage(hWnd, _C4CM_INITIALIZE, 7, 6);
+            return 0;
+
+
         case _C4CM_PUTCOIN:
             {
             int result = p_game->PutCoin((int)wp);
@@ -234,11 +275,15 @@ LRESULT CALLBACK _Connect4GuiMainWndProc(
 
 
         case _C4CM_UNDO:
-            p_game->Undo();
-            while (p_game->GetWhichTurn() != 1)
+            if (p_game == NULL)
+            {
+                return 0;
+            }
+            if (p_game->GetWhichTurn() == 1)
             {
                 p_game->Undo();
             }
+            p_game->Undo();
             InvalidateRect(hWnd_main_gui, NULL, FALSE);
             return 0;
 
@@ -312,6 +357,22 @@ LRESULT CALLBACK _Connect4GuiMainWndProc(
                 return FALSE;
             }
             return TRUE;
+
+
+        case _C4CM_SETTINGS:
+            _Connect4Settings(hWnd);
+            return 0;
+
+
+        case _C4CM_LOADSETTINGS:
+            {
+            Connect4Settings settings;
+            _Connect4SettingsLoadSettings(&settings, hWnd);
+
+            think_depth = settings.m_ThinkingDepth;
+            Connect4Ai::SetThinkDepth(think_depth);
+            return 0;
+            }
 
 
 
