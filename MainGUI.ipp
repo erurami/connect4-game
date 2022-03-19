@@ -6,7 +6,12 @@
 
 #include "MainWindow.hpp"
 
+#define UNICODE
 #include <windows.h>
+
+#include <commctrl.h>
+
+#include <stdio.h>
 
 
 
@@ -15,6 +20,10 @@ LRESULT CALLBACK _Connect4GuiGuiWndProc(
         UINT msg,
         WPARAM wp,
         LPARAM lp);
+
+void _Connect4GuiGuiDrawTextCenter(HDC hdc, LPTSTR string, RECT rect);
+
+COLORREF _Connect4GuiGuiBlendColor(COLORREF color1, COLORREF color2, int ratio1, int ratio2);
 
 int _Connect4GuiRegisterMainGuiWndClass(LPTSTR strWndClassName)
 {
@@ -74,6 +83,7 @@ void _Connect4GuiGuiDrawGameBoard(HDC hdc, _Connect4GuiGamePaintInfos* pPaintInf
 void _Connect4GuiBiggestRectangle(LPRECT pRect, int x, int y);
 
 
+
 LRESULT CALLBACK _Connect4GuiGuiWndProc(
         HWND hWnd,
         UINT msg,
@@ -90,6 +100,7 @@ LRESULT CALLBACK _Connect4GuiGuiWndProc(
     static HWND hWnd_button_stop_thinking;
 
     static HFONT hFont_main;
+    static HFONT hFont_button;
 
 
     // style vars
@@ -138,24 +149,36 @@ LRESULT CALLBACK _Connect4GuiGuiWndProc(
                     NULL
                     );
 
+            hFont_button = CreateFont(
+                    20, 0,
+                    0, 0, FW_NORMAL,
+                    FALSE, FALSE, FALSE,
+                    DEFAULT_CHARSET,
+                    OUT_DEFAULT_PRECIS,
+                    CLIP_DEFAULT_PRECIS,
+                    PROOF_QUALITY,
+                    VARIABLE_PITCH | FF_MODERN,
+                    TEXT("Segoe UI")
+                    );
+
 
             hWnd_button_newgame = CreateWindow(
                     TEXT("BUTTON"), TEXT("New"),
-                    WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+                    WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_OWNERDRAW,
                     0, 0, 50, toolbar_height,
                     hWnd, (HMENU)_BUTTON_ID_NEWGAME, hInstance, NULL
                     );
 
             hWnd_button_undo = CreateWindow(
                     TEXT("BUTTON"), TEXT("Undo"),
-                    WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+                    WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_OWNERDRAW,
                     50, 0, 50, toolbar_height,
                     hWnd, (HMENU)_BUTTON_ID_UNDO, hInstance, NULL
                     );
 
             hWnd_button_stop_thinking = CreateWindow(
                     TEXT("BUTTON"), TEXT("Stop"),
-                    WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+                    WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_OWNERDRAW,
                     100, 0, 50, toolbar_height,
                     hWnd, (HMENU)_BUTTON_ID_STOP, hInstance, NULL
                     );
@@ -168,6 +191,7 @@ LRESULT CALLBACK _Connect4GuiGuiWndProc(
 
         case WM_DESTROY:
             DeleteObject(hFont_main);
+            DeleteObject(hFont_button);
             return 0;
 
 
@@ -225,6 +249,60 @@ LRESULT CALLBACK _Connect4GuiGuiWndProc(
 
         case WM_ERASEBKGND:
             return 1;
+
+
+
+
+        case WM_DRAWITEM:
+            if (((LPDRAWITEMSTRUCT)lp)->CtlType == ODT_BUTTON)
+            {
+            HDC hdc;
+
+            hdc = ((LPDRAWITEMSTRUCT)(lp))->hDC;
+
+            TCHAR strText[32];
+            GetWindowText(((LPDRAWITEMSTRUCT)lp)->hwndItem, strText, 32);
+
+
+            COLORREF color_accent = GetBlendedTheme("A5F1");
+            COLORREF color_back   = GetBlendedTheme("B9B4F2");
+            COLORREF color_fore   = GetBlendedTheme("F9F4B2");
+
+            int line_width = 0;
+
+            if (((LPDRAWITEMSTRUCT)lp)->itemState & ODS_DISABLED)
+            {
+                color_accent = _Connect4GuiGuiBlendColor(color_accent, GetBlendedTheme("B1F1"), 1, 1);
+                color_back   = _Connect4GuiGuiBlendColor(color_back  , GetBlendedTheme("B1F1"), 1, 1);
+                color_fore   = _Connect4GuiGuiBlendColor(color_fore  , GetBlendedTheme("B1F1"), 1, 1);
+            }
+
+
+            HPEN   hPen_line = CreatePen(PS_SOLID, line_width, color_accent);
+            HBRUSH hBrush_background = CreateSolidBrush(color_back);
+
+            SelectObject(hdc , hPen_line);
+            SelectObject(hdc , hBrush_background);
+
+            SelectObject(hdc, hFont_button);
+            SetTextColor(hdc, color_fore);
+            SetBkMode(hdc, TRANSPARENT);
+
+
+            FillRect(hdc, &(((LPDRAWITEMSTRUCT)lp)->rcItem), hBrush_background);
+
+            Rectangle(hdc , 1 , 1 ,
+                ((LPDRAWITEMSTRUCT)(lp))->rcItem.right  - 1,
+                ((LPDRAWITEMSTRUCT)(lp))->rcItem.bottom - 1
+            );
+
+            _Connect4GuiGuiDrawTextCenter(hdc, strText, ((LPDRAWITEMSTRUCT)lp)->rcItem);
+
+
+            DeleteObject(hPen_line);
+
+            return TRUE;
+            }
 
 
 
@@ -348,13 +426,12 @@ LRESULT CALLBACK _Connect4GuiGuiWndProc(
     }
 }
 
+
+
+
 #undef _BUTTON_ID_NEWGAME
 #undef _BUTTON_ID_UNDO
 #undef _BUTTON_ID_STOP
-
-COLORREF _Connect4GuiGuiBlendColor(COLORREF color1, COLORREF color2, int ratio1, int ratio2);
-
-void _Connect4GuiGuiDrawTextCenter(HDC hdc, LPTSTR string, RECT rect);
 
 void _Connect4GuiGuiDrawGameBoard(HDC hdc, _Connect4GuiGamePaintInfos* pPaintInfos)
 {
