@@ -279,11 +279,10 @@ LRESULT CALLBACK _Connect4GuiMainWndProc(
             {
                 return 0;
             }
-            if (p_game->GetWhichTurn() == 2)
+            if (p_game->GetWhichTurn() == 1)
             {
-                return 0;
+                p_game->Undo();
             }
-            p_game->Undo();
             p_game->Undo();
             InvalidateRect(hWnd_main_gui, NULL, FALSE);
             return 0;
