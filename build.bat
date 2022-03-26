@@ -3,8 +3,7 @@
 
 rc WndMenu.rc
 
-rmdir builds /q /s
-mkdir builds
+if not exist builds\ mkdir builds
 
 cl main.cpp WndMenu.res /W4 /std:c++17 /EHsc /Fe:builds\main.exe /link /subsystem:windows
 
