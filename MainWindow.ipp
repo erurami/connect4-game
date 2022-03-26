@@ -4,6 +4,7 @@
 
 #pragma comment(lib, "user32.lib")
 #pragma comment(lib, "gdi32.lib" )
+#pragma comment(lib, "Comdlg32.lib" )
 
 #pragma comment(linker,"\"/manifestdependency:type='win32' \
 name='Microsoft.Windows.Common-Controls' version='6.0.0.0' \
@@ -220,6 +221,22 @@ LRESULT CALLBACK _Connect4GuiMainWndProc(
                     case MENUID_SETTINGS:
                         PostMessage(hWnd, _C4CM_SETTINGS, 0, 0);
                         break;
+
+                    case MENUID_SAVE:
+                        PostMessage(hWnd, _C4CM_SAVEAS, 1, 0);
+                        break;
+
+                    case MENUID_SAVEAS:
+                        PostMessage(hWnd, _C4CM_SAVEAS, 0, 0);
+                        break;
+
+                    case MENUID_LOAD:
+                        PostMessage(hWnd, _C4CM_OPEN, 1, 0);
+                        break;
+
+                    case MENUID_OPEN:
+                        PostMessage(hWnd, _C4CM_OPEN, 0, 0);
+                        break;
                 }
             }
             return 0;
@@ -371,6 +388,124 @@ LRESULT CALLBACK _Connect4GuiMainWndProc(
 
             think_depth = settings.m_ThinkingDepth;
             Connect4Ai::SetThinkDepth(think_depth);
+            return 0;
+            }
+
+
+        case _C4CM_SAVEAS:
+            {
+
+            if (p_game == NULL)
+            {
+                MessageBox(hWnd, TEXT("game is not initialized.\npress \"new\" to start new game."), TEXT("error"), MB_ICONERROR);
+                return 0;
+            }
+
+            FILE* p_save_file;
+
+            TCHAR str_save_path[MAX_PATH] = TEXT("save.co4");
+
+            if (wp == 0)
+            {
+                OPENFILENAME ofn = {0};
+
+                ofn.lStructSize = sizeof (OPENFILENAME);
+                ofn.hwndOwner = hWnd;
+
+                ofn.lpstrFilter = TEXT("Co4 files {*.co4*}\0*.co4*\0");
+                ofn.lpstrCustomFilter = NULL;
+                ofn.nFilterIndex = 0;
+
+                ofn.lpstrFile = str_save_path;
+                ofn.nMaxFile = MAX_PATH;
+
+                ofn.Flags = OFN_EXPLORER;
+
+                ofn.lpstrDefExt = NULL;
+
+                GetSaveFileName(&ofn);
+            }
+
+            if (fopen_s(&p_save_file, str_save_path, "w") != 0)
+            {
+                MessageBox(hWnd, TEXT("error opening save file"), TEXT("error"), MB_ICONERROR);
+                return 0;
+            }
+
+            char* save_data;
+            save_data = new char [p_game->GetSaveSize()];
+
+            p_game->Export(save_data, p_game->GetSaveSize());
+
+            fprintf(p_save_file, "%s", save_data);
+
+            delete [] save_data;
+
+            fclose(p_save_file);
+
+            return 0;
+            }
+
+
+        case _C4CM_OPEN:
+            {
+
+            TCHAR str_open_path[MAX_PATH] = TEXT("save.co4");
+
+            if (wp == 0)
+            {
+                OPENFILENAME ofn = {0};
+
+                ofn.lStructSize = sizeof (OPENFILENAME);
+                ofn.hwndOwner = hWnd;
+
+                ofn.lpstrFilter = TEXT("Co4 files {*.co4*}\0*.co4*\0");
+                ofn.lpstrCustomFilter = NULL;
+                ofn.nFilterIndex = 0;
+
+                ofn.lpstrFile = str_open_path;
+                ofn.nMaxFile = MAX_PATH;
+
+                ofn.Flags = OFN_EXPLORER;
+
+                ofn.lpstrDefExt = NULL;
+
+                GetOpenFileName(&ofn);
+            }
+
+            FILE* p_save_file;
+
+            if (fopen_s(&p_save_file, str_open_path, "r") != 0)
+            {
+                MessageBox(hWnd, TEXT("error opening save file"), TEXT("error"), MB_ICONERROR);
+                return 0;
+            }
+
+            fseek(p_save_file, 0L, SEEK_END);
+            int save_size = ftell(p_save_file);
+            fseek(p_save_file, 0L, SEEK_SET);
+
+            char* save_data;
+            save_data = new char [save_size + 1];
+
+            fgets(save_data, save_size + 1, p_save_file);
+
+
+            if (p_game == NULL)
+            {
+                SendMessage(hWnd, _C4CM_INITIALIZE, 1, 1);
+            }
+
+            if (p_game->Import(save_data) == 0)
+            {
+                MessageBox(hWnd, TEXT("error importing file"), TEXT("error"), MB_ICONERROR);
+            }
+            else
+            {
+                SendMessage(hWnd_main_gui, _C4GWM_REDRAW, 0, 0);
+            }
+
+            fclose(p_save_file);
             return 0;
             }
 
