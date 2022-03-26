@@ -16,8 +16,10 @@
 #define _C4CM_ISINITIALIZED     (WM_APP + 12)
 #define _C4CM_SETTINGS          (WM_APP + 13)
 #define _C4CM_LOADSETTINGS      (WM_APP + 14)
+#define _C4CM_SAVEAS            (WM_APP + 15)
+#define _C4CM_OPEN              (WM_APP + 16)
 // (C)onnect(4) (W)indow (M)essage
-#define _C4WM_ADJUSTCHILDWND    (WM_APP + 15)
+#define _C4WM_ADJUSTCHILDWND    (WM_APP + 17)
 
 int RunConnect4Game(void);
 

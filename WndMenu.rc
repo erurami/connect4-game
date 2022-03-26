@@ -5,6 +5,15 @@
 
 WNDMENU MENU
 {
+    POPUP "File(&F)"
+    {
+        MENUITEM "Save(&s)", MENUID_SAVE
+        MENUITEM "Save As(&a)", MENUID_SAVEAS
+        MENUITEM SEPARATOR
+        MENUITEM "Load(&l)", MENUID_LOAD
+        MENUITEM "Open(&o)", MENUID_OPEN
+    }
+
     POPUP "General(&N)"
     {
         MENUITEM "Settings(&s)", MENUID_SETTINGS
