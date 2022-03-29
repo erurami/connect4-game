@@ -242,6 +242,20 @@ LRESULT CALLBACK _Connect4GuiMainWndProc(
             return 0;
 
 
+        case WM_KEYUP:
+            switch (wp)
+            {
+                case 'N':
+                    if (GetKeyState(VK_CONTROL) < 0 &&
+                        GetKeyState(VK_SHIFT  ) >= 0)
+                    {
+                        PostMessage(hWnd, _C4CM_INITIALIZEWITHWZD, 0, 0);
+                    }
+                    break;
+            }
+            return 0;
+
+
 
 
         case _C4WM_ADJUSTCHILDWND:
