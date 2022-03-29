@@ -500,10 +500,7 @@ LRESULT CALLBACK _Connect4GuiMainWndProc(
             {
                 MessageBox(hWnd, TEXT("error importing file"), TEXT("error"), MB_ICONERROR);
             }
-            else
-            {
-                SendMessage(hWnd_main_gui, _C4GWM_REDRAW, 0, 0);
-            }
+            InvalidateRect(hWnd_main_gui, NULL, FALSE);
 
             fclose(p_save_file);
             return 0;
