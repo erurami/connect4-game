@@ -23,6 +23,8 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
 #include "SettingsWnd.hpp"
 
+#include "GameInitDlg.hpp"
+
 #define UNICODE
 #include <windows.h>
 
@@ -270,7 +272,8 @@ LRESULT CALLBACK _Connect4GuiMainWndProc(
 
         case _C4CM_INITIALIZEWITHWZD:
             // TODO:
-            SendMessage(hWnd, _C4CM_INITIALIZE, 7, 6);
+            // SendMessage(hWnd, _C4CM_INITIALIZE, 7, 6);
+            GameInitializeDlg(hWnd);
             return 0;
 
 
