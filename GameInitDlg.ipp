@@ -5,6 +5,8 @@
 
 #include "WndMenuId.h"
 
+#include "MainWindow.hpp"
+
 
 BOOL CALLBACK _Connect4InitializeDlgProc(
         HWND hWnd,
@@ -39,9 +41,11 @@ BOOL CALLBACK _Connect4InitializeDlgProc(
     {
         case WM_INITDIALOG:
             {
-            SendDlgItemMessage(hWnd, IDC_NEWGAME_WIDTH_SPIN, UDM_SETRANGE, 0, MAKELPARAM(100, 0));
+            SendDlgItemMessage(hWnd, IDC_NEWGAME_WIDTH_SPIN , UDM_SETRANGE, 0, MAKELPARAM(100, 1));
+            SendDlgItemMessage(hWnd, IDC_NEWGAME_HEIGHT_SPIN, UDM_SETRANGE, 0, MAKELPARAM(100, 1));
 
-            SendDlgItemMessage(hWnd, IDC_NEWGAME_WIDTH_SPIN, UDM_SETPOS, 0, DEFAULT_WIDTH);
+            SendDlgItemMessage(hWnd, IDC_NEWGAME_WIDTH_SPIN , UDM_SETPOS, 0, DEFAULT_WIDTH);
+            SendDlgItemMessage(hWnd, IDC_NEWGAME_HEIGHT_SPIN, UDM_SETPOS, 0, DEFAULT_HEIGHT);
             return TRUE;
             }
 
@@ -50,20 +54,22 @@ BOOL CALLBACK _Connect4InitializeDlgProc(
             return TRUE;
 
         case WM_COMMAND:
-            // switch (LOWORD(wp))
-            // {
-            //     case IDC_SETTINGS_OK:
-            //         {
-            //         Connect4Settings settings;
+            switch (LOWORD(wp))
+            {
+                case IDC_NEWGAME_START:
+                    {
+                    SendMessage(GetWindow(hWnd, GW_OWNER),
+                                _C4CM_INITIALIZE,
+                                SendDlgItemMessage(hWnd, IDC_NEWGAME_WIDTH_SPIN , UDM_GETPOS, 0, 0),
+                                SendDlgItemMessage(hWnd, IDC_NEWGAME_HEIGHT_SPIN, UDM_GETPOS, 0, 0));
+                    EndDialog(hWnd, IDOK);
+                    return TRUE;
+                    }
 
-            //         settings.m_ThinkingDepth = (int)SendDlgItemMessage(hWnd, IDC_SETTINGS_THINKDEPTH_SPIN, UDM_GETPOS, 0, 0);
-
-            //         _Connect4SettingsSaveSettings(&settings, hWnd);
-            //         }
-            //     case IDC_SETTINGS_CANCEL:
-            //         EndDialog(hWnd, IDOK);
-            //         return TRUE;
-            // }
+                case IDC_NEWGAME_CANCEL:
+                    EndDialog(hWnd, IDOK);
+                    return TRUE;
+            }
             return FALSE;
 
     }

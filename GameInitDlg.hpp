@@ -4,12 +4,7 @@
 #include <windows.h>
 
 #define DEFAULT_WIDTH  7
-
-typedef struct _Connect4InitInfos
-{
-    int width;
-    int height;
-} Connect4InitInfos;
+#define DEFAULT_HEIGHT 6
 
 void GameInitializeDlg(HWND hWndParent);
 
