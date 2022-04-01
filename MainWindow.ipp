@@ -243,15 +243,86 @@ LRESULT CALLBACK _Connect4GuiMainWndProc(
 
 
         case WM_KEYUP:
-            switch (wp)
             {
-                case 'N':
-                    if (GetKeyState(VK_CONTROL) < 0 &&
-                        GetKeyState(VK_SHIFT  ) >= 0)
-                    {
+            bool is_control_pressed = (GetKeyState(VK_CONTROL) < 0);
+            bool is_shift_pressed   = (GetKeyState(VK_SHIFT  ) < 0);
+
+            if (is_control_pressed && is_shift_pressed)
+            {
+                switch (wp)
+                {
+                    case 'S':
+                        PostMessage(hWnd, _C4CM_SAVEAS, 0, 0);
+                        break;
+                    case 'O':
+                        PostMessage(hWnd, _C4CM_OPEN, 0, 0);
+                        break;
+                    case 'I':
+                        PostMessage(hWnd, _C4CM_SETTINGS, 0, 0);
+                        break;
+                }
+            }
+            else if (is_control_pressed)
+            {
+                switch (wp)
+                {
+                    case 'N':
                         PostMessage(hWnd, _C4CM_INITIALIZEWITHWZD, 0, 0);
-                    }
-                    break;
+                        break;
+                    case 'O':
+                        PostMessage(hWnd, _C4CM_OPEN, 1, 0);
+                        break;
+                    case 'S':
+                        PostMessage(hWnd, _C4CM_SAVEAS, 1, 0);
+                        break;
+                    case 'W':
+                        PostMessage(hWnd, WM_CLOSE, 0, 0);
+                        break;
+                    case 'Q':
+                        PostMessage(hWnd, _C4CM_STOPTHINKING, 0, 0);
+                        break;
+                }
+            }
+            else if (is_shift_pressed)
+            {
+            }
+            else
+            {
+                switch (wp)
+                {
+                    case 'U':
+                        PostMessage(hWnd, _C4CM_UNDO, 0, 0);
+                        break;
+
+                    case '1':
+                        PostMessage(hWnd, _C4CM_PUTCOIN, 0, 0);
+                        break;
+                    case '2':
+                        PostMessage(hWnd, _C4CM_PUTCOIN, 1, 0);
+                        break;
+                    case '3':
+                        PostMessage(hWnd, _C4CM_PUTCOIN, 2, 0);
+                        break;
+                    case '4':
+                        PostMessage(hWnd, _C4CM_PUTCOIN, 3, 0);
+                        break;
+                    case '5':
+                        PostMessage(hWnd, _C4CM_PUTCOIN, 4, 0);
+                        break;
+                    case '6':
+                        PostMessage(hWnd, _C4CM_PUTCOIN, 5, 0);
+                        break;
+                    case '7':
+                        PostMessage(hWnd, _C4CM_PUTCOIN, 6, 0);
+                        break;
+                    case '8':
+                        PostMessage(hWnd, _C4CM_PUTCOIN, 7, 0);
+                        break;
+                    case '9':
+                        PostMessage(hWnd, _C4CM_PUTCOIN, 8, 0);
+                        break;
+                }
+            }
             }
             return 0;
 
