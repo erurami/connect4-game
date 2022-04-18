@@ -363,6 +363,10 @@ LRESULT CALLBACK _Connect4GuiMainWndProc(
 
 
         case _C4CM_PUTCOIN:
+            if (p_game == NULL)
+            {
+                return 0;
+            }
             {
             int result = p_game->PutCoin((int)wp);
             game_state = p_game->GetWhichTurn();
